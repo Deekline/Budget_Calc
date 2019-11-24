@@ -16,6 +16,14 @@ const budgetController = (function () {
         }
     }
 
+    let calculateTotal = (type) => {
+        let sum = 0;
+        data.allItems[type].forEach ((cur) => {
+            return sum += cur.value;
+        });
+        data.totals[type] = sum
+    }
+
     let data = {
         allItems: {
             exp: [],
@@ -24,7 +32,9 @@ const budgetController = (function () {
         totals: {
             exp: 0,
             inc: 0,
-        }
+        },
+        budget: 0,
+        percentage: -1,
     };
 
     return {
@@ -51,6 +61,25 @@ const budgetController = (function () {
             //return new element
             return newItem;
         },
+
+        calculateBudget:  () => {
+            //calc total incomes and expenses
+            calculateTotal('exp')
+
+            calculateTotal('inc')
+            //calc budget
+            data.budget = data.totals.inc - data.totals.exp;
+            //calc % of income
+            data.percentage = Math.round(data.totals.exp / data.totals.inc * 100)
+        },
+        getBudget: () => {
+            return {
+                budget: data.budget,
+                percentage: data.percentage,
+                totalInc: data.totals.inc,
+                totalExp: data.totals.exp,
+            }
+        },
         testing: () => {
             console.log(data)
         }
@@ -59,20 +88,6 @@ const budgetController = (function () {
 
 
 })();
-
-class Budget {
-    constructor(id, description, value) {
-        this.id = id;
-        this.description = description;
-        this.value = value;
-    }
-}
-
-let exp = new Budget('EXP', "test", 1234);
-console.log(exp)
-
-
-
 
 
 const UIController = (function () {
@@ -92,7 +107,7 @@ const UIController = (function () {
             return {
                 type: document.querySelector(DOMstings.inputType).value, // Will be inc or exp
                 description: document.querySelector(DOMstings.inputDescription).value,
-                value: document.querySelector(DOMstings.inputValue).value,
+                value: parseFloat(document.querySelector(DOMstings.inputValue).value),
             }
         },
 
@@ -128,7 +143,16 @@ const UIController = (function () {
 
             //insert HTML into the DOM
             document.querySelector(element).insertAdjacentHTML('beforeend', html);
+            
         },
+
+        addBudgets: (obj) => {
+            document.querySelector('.budget__expenses--value').innerHTML = `- ${obj.totalExp}`;
+            document.querySelector('.budget__expenses--percentage').innerHTML = `- ${obj.percentage} %`;
+            document.querySelector('.budget__income--value').innerHTML = `+ ${obj.totalInc}`;
+            document.querySelector('.budget__value').innerHTML =`+ ${obj.budget}`;
+        },
+
         clearFields: () => {
             let fields = document.querySelectorAll(DOMstings.inputDescription + ', ' + DOMstings.inputValue);
             let fieldsArray = Array
@@ -161,19 +185,33 @@ const controller = (function (budgetCtrl, UICtrl) {
         });
     };
 
-
+    let updateBudget = () => {
+        // 1. Calculate the budget
+        budgetCtrl.calculateBudget();
+        // 2. Return the budget
+        let budget = budgetCtrl.getBudget();
+        // 3. Display the budget on UI
+        UICtrl.addBudgets(budget);
+    }
 
     let ctrlAddItem = () => {
         // 1. Get the field input data
         let input = UICtrl.getInput();
+
+        if (input.description !== "" && !isNaN(input.value) && input.value > 0) {
         // 2. Add the item to the budget contoller
         let newItem = budgetCtrl.addItem(input.type, input.description, input.value);
         // 3. Add new item to UI
         UICtrl.addListItem(newItem, input.type);
         // 4. Clear Fields
-        UIController.clearFields()
-        // 5. Calculate the budget
-        // 6. Display the budget on UI
+        UIController.clearFields();
+        //5 Calculate and upd budget
+        updateBudget();
+        } else {
+            console.log('Fields!!!!')
+        }
+ 
+
     };
 
     return {
