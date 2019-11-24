@@ -134,10 +134,11 @@ const UIController = (function () {
             let fieldsArray = Array
                 .prototype
                 .slice
-                .call(fields)
-                .forEach((cur, ind, arr) => {
-                    cur.value = "";
-                })
+                .call(fields);
+            fieldsArray.forEach((cur, ind, arr) => {
+                cur.value = "";
+            });
+            fieldsArray[0].focus();
         },
         getDOMstrings: () => {
             return DOMstings;
